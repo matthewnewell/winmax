@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "WinMax Backend",
+      "runtimeExecutable": "backend/.venv/bin/python",
+      "runtimeArgs": ["app.py"],
+      "cwd": "/home/matthew/winmax/backend",
+      "port": 8099
+    },
+    {
+      "name": "WinMax Frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--host", "0.0.0.0"],
+      "cwd": "/home/matthew/winmax/frontend",
+      "port": 5185
+    }
+  ]
+}

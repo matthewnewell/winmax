@@ -1,0 +1,254 @@
+.splash-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.splash-page__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background:
+    radial-gradient(46rem 20rem at 50% -7rem, var(--color-accent-soft), transparent 70%),
+    var(--color-bg);
+}
+
+.splash-page__content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.splash-hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.splash-hero__title {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.splash-hero__sub {
+  margin: 0;
+  max-width: 56ch;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.splash-info-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-faint);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+}
+
+.splash-info-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.splash-figure {
+  margin: 0;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.splash-figure__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ── the three gates, left to right: P(Go) -> P(Win) -> Bid/No-Bid — the actual gating order
+   metrics.md specifies, not alphabetical or build order. Each box shows the demo pursuit's
+   real current figures. Wraps to a stack on narrow viewports. ── */
+.splash-layout {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.splash-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 20px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  border-top: 3px solid var(--color-border-strong);
+}
+
+.splash-gate--accent {
+  border-top-color: var(--color-accent);
+}
+
+.splash-gate--success {
+  border-top-color: var(--color-success);
+}
+
+.splash-gate__label {
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-faint);
+}
+
+.splash-gate__value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.splash-gate__band {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+/* A deliberate connector, not a lone floating glyph: a drawn line landing on an arrowhead,
+   vertically centered between the two boxes (both boxes stretch to the row's full height). */
+.splash-connector {
+  display: flex;
+  align-items: center;
+  width: 44px;
+}
+
+.splash-connector__line {
+  flex: 1;
+  height: 2px;
+  background: var(--color-accent);
+}
+
+.splash-connector__head {
+  color: var(--color-accent);
+  font-size: 14px;
+  line-height: 1;
+  margin-left: -2px;
+}
+
+@media (max-width: 860px) {
+  .splash-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .splash-connector {
+    width: auto;
+    padding: 4px 0 4px 15px;
+  }
+}
+
+/* ── info modal ── */
+.splash-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 20, 30, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+
+.splash-modal {
+  position: relative;
+  max-width: 480px;
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.splash-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.splash-modal__close:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.splash-modal__title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.splash-modal__body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.splash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.splash-card {
+  padding: 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.splash-card__heading {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.splash-card__body {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
