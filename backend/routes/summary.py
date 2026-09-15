@@ -3,7 +3,7 @@ import os
 from flask import Blueprint, jsonify, request
 
 from bands import p_win_band
-from models import GATE_LABEL, Pursuit
+from models import GATE_LABEL, METRIC_LABEL, BidDecision, Pursuit, PursuitEvent, ScoreEntry
 
 bp = Blueprint("summary", __name__, url_prefix="/api")
 
@@ -53,3 +53,50 @@ def summary():
         "status": status,
         "href": f"{FRONTEND_BASE_URL}/pursuits/{p.id}",
     })
+
+
+@bp.get("/journal")
+def journal():
+    """The Launchpad's cross-app journal contract (see Value Stream's routes/summary.py for the
+    sibling implementation this one mirrors, and Conway's Depot's project-level aggregator for
+    how these get merged with every other connected app's entries). `project_id` here is one of
+    this app's own pursuit ids, translated the same way /summary's is.
+
+    Merges three tables into one timeline, not just PursuitEvent: a P(Win)/P(Go) score or a
+    bid/no-bid call is exactly the kind of thing "how we got here" needs, and each already
+    carries its own required rationale (see ScoreEntry/BidDecision's own docstrings) — leaving
+    them out because they live in a separate table would make this feed actively misleading,
+    not just incomplete. This app owns the wording of every `summary` line; the Depot never
+    parses it back apart."""
+    pursuit_id = request.args.get("project_id")
+    p = Pursuit.query.get(pursuit_id) if pursuit_id else None
+    if p is None:
+        return jsonify({"entries": []})
+
+    href = f"{FRONTEND_BASE_URL}/pursuits/{p.id}"
+    rows: list[dict] = []
+
+    for e in PursuitEvent.query.filter_by(pursuit_id=p.id).all():
+        if e.kind == "change":
+            summary = f"{e.field} changed from “{e.old_value}” to “{e.new_value}”"
+            if e.note:
+                summary += f" — {e.note}"
+        else:
+            summary = e.note or ""
+        rows.append({"id": e.id, "timestamp": e.created_at, "author": e.author, "summary": summary})
+
+    for s in ScoreEntry.query.filter_by(pursuit_id=p.id).all():
+        gate_label = GATE_LABEL.get(s.gate, s.gate)
+        metric_label = METRIC_LABEL.get(s.metric, s.metric)
+        summary = f"{metric_label} scored {s.score}% at {gate_label} — “{s.note}”"
+        rows.append({"id": s.id, "timestamp": s.created_at, "author": s.author, "summary": summary})
+
+    for b in BidDecision.query.filter_by(pursuit_id=p.id).all():
+        gate_label = GATE_LABEL.get(b.gate, b.gate)
+        call = "GO" if b.decision == "go" else "NO-GO"
+        summary = f"Bid decision: {call} at {gate_label} — “{b.note}”"
+        rows.append({"id": b.id, "timestamp": b.created_at, "author": b.author, "summary": summary})
+
+    rows.sort(key=lambda r: r["timestamp"], reverse=True)
+    entries = [{**r, "timestamp": r["timestamp"].isoformat(), "href": href} for r in rows[:200]]
+    return jsonify({"entries": entries})
