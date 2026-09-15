@@ -5,6 +5,7 @@ from flask import Flask, send_from_directory
 from db import init_db
 from routes.ai import bp as ai_bp
 from routes.pursuits import bp as pursuits_bp
+from routes.summary import bp as summary_bp
 from seed import seed_if_empty
 
 FRONTEND_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
@@ -17,6 +18,7 @@ def create_app():
     init_db(app)
     app.register_blueprint(pursuits_bp)
     app.register_blueprint(ai_bp)
+    app.register_blueprint(summary_bp)
 
     with app.app_context():
         seed_if_empty()
