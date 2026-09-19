@@ -1,3 +1,4 @@
+import { DrawerLayout } from '@conways/drawer'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAddBidDecision, useAddScore, useHealth, usePursuit, useUpdatePursuit } from '../api/hooks'
@@ -6,9 +7,12 @@ import type { Gate, Metric, PursuitStatus } from '../api/types'
 import Nav from '../components/Nav'
 import { BidBadge, ScoreBadge, ScoreBadgeEmpty } from '../components/ScoreBadge'
 import Journal from '../components/Journal'
-import ChatPanel from '../components/ChatPanel'
 import { getAuthor, relativeTime } from '../lib/journal'
 import './PursuitDetailPage.css'
+
+// This app's own id in Conway's Depot's registry. WinMax stays Depot-unaware (it never learns a
+// Depot project id), so the shared Journal resolves the project from this + the pursuit id.
+const DEPOT_APPLICATION_ID = '2f4c85f5-79ca-42ae-a3ad-f9793433d2fe'
 
 const P_WIN_FACTORS = [
   'Customer relationship strength', 'Competitive position', 'Solution fit',
@@ -30,7 +34,6 @@ export default function PursuitDetailPage() {
   const { data: p, isLoading } = usePursuit(pursuitId)
   const { data: health } = useHealth()
   const updatePursuit = useUpdatePursuit(pursuitId ?? '')
-  const [chatOpen, setChatOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [factorsFor, setFactorsFor] = useState<'p_win' | 'p_go' | 'bid' | null>(null)
 
@@ -39,7 +42,21 @@ export default function PursuitDetailPage() {
   return (
     <div className="pursuit-layout">
       <Nav />
-      <div className="pursuit-layout__row">
+      <DrawerLayout
+        scrollMain={false}
+        agent={{
+          chatUrl: '/api/chat',
+          chatExtra: { pursuit_id: p.id },
+          aiConfigured: health?.ai_configured ?? false,
+          intro: 'Ask about this pursuit — its scores, gate, and what to settle before the next review.',
+          starters: [
+            'Does the P(Win) score actually match its own note?',
+            'Are we ignoring a low P(Go) while investing on P(Win) alone?',
+            "What's missing before the next gate review?",
+          ],
+        }}
+        journal={{ resolve: { applicationId: DEPOT_APPLICATION_ID, externalRef: p.id } }}
+      >
         <div className="pursuit-detail">
           <div className="pursuit-detail__inner">
             <header className="pursuit-detail__header">
@@ -98,12 +115,7 @@ export default function PursuitDetailPage() {
           </div>
         </div>
 
-        {chatOpen ? (
-          <ChatPanel pursuitId={p.id} aiConfigured={health?.ai_configured ?? false} onCollapse={() => setChatOpen(false)} />
-        ) : (
-          <button className="pursuit-layout__chat-tab" onClick={() => setChatOpen(true)} title="Open chat">✨ Chat</button>
-        )}
-      </div>
+      </DrawerLayout>
     </div>
   )
 }
