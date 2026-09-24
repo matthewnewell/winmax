@@ -1,32 +1,20 @@
-import { Link, NavLink } from 'react-router-dom'
-import './Nav.css'
+import { AppHeader, tabClass } from '@conways/drawer'
+import { NavLink } from 'react-router-dom'
 
-// Matches backend/seed.py's DEMO_PURSUIT_ID — the healthy demo pursuit the splash figure and
-// this nav's "Demo" link both point at.
-const DEMO_PURSUIT_ID = 'demo-avionics-idiq'
-
+/** The ecosystem's shared header (@conways/drawer's AppHeader): back to where you came from in
+ * Conway's Depot, the app and its tabs, and the "viewing as" user menu. */
 export default function Nav() {
   return (
-    <nav className="wm-nav">
-      <NavLink to="/about" className="wm-nav__brand">
-        WinMax
+    <AppHeader
+      brand={
+        <NavLink to="/about" className="ch-brand">
+          WinMax
+        </NavLink>
+      }
+    >
+      <NavLink to="/" end className={({ isActive }) => tabClass(isActive)}>
+        Pursuits
       </NavLink>
-      <div className="wm-nav__links">
-        <NavLink
-          to={`/pursuits/${DEMO_PURSUIT_ID}`}
-          className={({ isActive }) => `wm-nav__link ${isActive ? 'wm-nav__link--active' : ''}`}
-        >
-          Demo
-        </NavLink>
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) => `wm-nav__link ${isActive ? 'wm-nav__link--active' : ''}`}
-        >
-          Pursuits
-        </NavLink>
-      </div>
-      <Link className="wm-btn wm-btn--primary wm-nav__new" to="/?new=1">+ New pursuit</Link>
-    </nav>
+    </AppHeader>
   )
 }

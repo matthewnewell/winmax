@@ -45,6 +45,32 @@ Your job:
 """
 
 
+def _build_portfolio_context() -> str:
+    """Same idea as `_build_context`, one level up — every pursuit's current state, for the
+    Pursuits list page's Agent (no single pursuit in view there). Scores/bid only show the
+    latest call at each metric, not the full history — this is a pipeline-wide skim, not a
+    replacement for a specific pursuit's own deeper chat."""
+    pursuits = Pursuit.query.order_by(Pursuit.created_at.desc()).all()
+    if not pursuits:
+        return "No pursuits tracked yet."
+    lines = [f"{len(pursuits)} pursuits tracked:"]
+    for p in pursuits:
+        p_win = p.latest_score("p_win")
+        p_go = p.latest_score("p_go")
+        bid = p.latest_bid_decision()
+        bits = [
+            f'"{p.name}"',
+            f"customer: {p.customer or 'unknown'}",
+            f"gate: {GATE_LABEL[p.current_gate]}",
+            f"status: {p.status}",
+            f"P(Win): {f'{p_win.score}%' if p_win else 'not assessed'}",
+            f"P(Go): {f'{p_go.score}%' if p_go else 'not assessed'}",
+            f"Bid/No-Bid: {bid.decision if bid else 'not decided'}",
+        ]
+        lines.append("  - " + ", ".join(bits))
+    return "\n".join(lines)
+
+
 def _build_context(p: Pursuit) -> str:
     lines = [f'Pursuit: "{p.name}" (customer: {p.customer or "unknown"}, gate: {GATE_LABEL[p.current_gate]}, status: {p.status})']
     if p.description:
@@ -97,11 +123,11 @@ def chat():
     if not messages:
         return jsonify({"error": "messages is required"}), 400
 
+    # pursuit_id is optional: the Pursuits list page's Agent has no single pursuit in view, so
+    # it gets a pipeline-wide skim instead (see _build_portfolio_context).
     pursuit_id = body.get("pursuit_id")
-    if not pursuit_id:
-        return jsonify({"error": "pursuit_id is required"}), 400
-    p = Pursuit.query.get_or_404(pursuit_id)
+    context = _build_context(Pursuit.query.get_or_404(pursuit_id)) if pursuit_id else _build_portfolio_context()
 
-    system = SYSTEM_PROMPT + "\n\n" + _build_context(p)
+    system = SYSTEM_PROMPT + "\n\n" + context
     reply = ai_client.chat(messages, system=system, max_tokens=1024)
     return jsonify({"reply": reply})

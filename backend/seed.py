@@ -24,11 +24,16 @@ _PORTFOLIO = "Industrial Programs"
 # Fixed (not random-uuid) id on the healthy demo pursuit — same convention as The Fixer's
 # DEMO_CASE_ID — so the splash page's figure and the nav's "Demo" link can point straight at it.
 DEMO_PURSUIT_ID = "demo-avionics-idiq"
+# The other pursuits' ids are pinned too: they're the same ids as their Depot projects (and Good
+# Plan's plans), so Labor Supply & Demand's Outlook can join a plan to its P(Win) by id.
+RADAR_PURSUIT_ID = "253e7b04-1bab-4467-83fe-b2249cbcbe5f"
+FRC_PURSUIT_ID = "058bf4bb-5a4b-44c9-9163-8e9935e883a3"
+COASTAL_PURSUIT_ID = "d4e7a1b9-5c28-4360-9f1a-e83b0c6d72f5"
 
 
-def _pursuit(name, customer, gate, status, created_offset, id=None):
+def _pursuit(name, customer, gate, status, created_offset, id=None, portfolio=_PORTFOLIO):
     return Pursuit(
-        id=id, name=name, customer=customer, portfolio=_PORTFOLIO,
+        id=id, name=name, customer=customer, portfolio=portfolio,
         current_gate=gate, status=status, created_by="Sam Ortiz (PM)",
         created_at=_now() + created_offset * DAY,
     )
@@ -77,7 +82,7 @@ def seed_if_empty():
     # ── 2. The anti-pattern, avoided ──
     radar = _pursuit(
         "Legacy Radar Depot Repair Recompete", "Naval Air Systems Command",
-        "capture_plan", "no_bid", -50,
+        "capture_plan", "no_bid", -50, id=RADAR_PURSUIT_ID,
     )
     db.session.add(radar)
     db.session.flush()
@@ -96,7 +101,7 @@ def seed_if_empty():
     # ── 3. Freshly qualified, no bid call yet ──
     frc = _pursuit(
         "Fleet Readiness Center Depot-Level Repair", "Naval Air Systems Command",
-        "qualification", "active", -6,
+        "qualification", "active", -6, id=FRC_PURSUIT_ID,
     )
     db.session.add(frc)
     db.session.flush()
@@ -109,4 +114,36 @@ def seed_if_empty():
                    author="Dana Kim (PM)", created_at=now - 4 * DAY),
     ])
 
+    db.session.commit()
+
+
+def seed_coastal_if_missing():
+    """The Depot's "Prospect: Coastal Patrol Recompete" as a pursuit, so it carries a P(Win) too.
+    Idempotent: added to a live database that was seeded before it existed."""
+    if db.session.get(Pursuit, COASTAL_PURSUIT_ID) is not None:
+        return
+    now = _now()
+    coastal = _pursuit(
+        "Prospect: Coastal Patrol Recompete", "Coast Guard Surface Forces Logistics Center",
+        "capture_plan", "active", -40, id=COASTAL_PURSUIT_ID, portfolio="Defense Systems",
+    )
+    db.session.add(coastal)
+    db.session.flush()
+    db.session.add_all([
+        ScoreEntry(pursuit_id=coastal.id, metric="p_win", score=30, gate="qualification",
+                   note="Incumbent recompete; the incumbent's CPARS are strong and we have no patrol-boat past performance yet.",
+                   author="Dana Kim (PM)", created_at=now - 38 * DAY),
+        ScoreEntry(pursuit_id=coastal.id, metric="p_go", score=70, gate="qualification",
+                   note="Funded in the current budget and on the forecast; RFP expected next quarter.",
+                   author="Dana Kim (PM)", created_at=now - 38 * DAY),
+        BidDecision(pursuit_id=coastal.id, decision="go", gate="qualification",
+                    note="Go, on the teaming agreement with a patrol-boat yard for the past-performance gap.",
+                    author="Dana Kim (PM)", created_at=now - 30 * DAY),
+        ScoreEntry(pursuit_id=coastal.id, metric="p_win", score=35, gate="capture_plan",
+                   note="Teaming partner signed; still an underdog against the incumbent.",
+                   author="Dana Kim (PM)", created_at=now - 10 * DAY),
+        ScoreEntry(pursuit_id=coastal.id, metric="p_go", score=72, gate="capture_plan",
+                   note="Draft RFP released; requirement matches the forecast.",
+                   author="Dana Kim (PM)", created_at=now - 10 * DAY),
+    ])
     db.session.commit()
