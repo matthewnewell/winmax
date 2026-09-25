@@ -36,6 +36,8 @@ def _set_sqlite_pragma(dbapi_conn, connection_record):
 # data to worry about yet; revisit only if a destructive change is ever needed.
 _MIGRATIONS: list[tuple[str, str, str]] = [
     ("incident", "portfolio", "ALTER TABLE incident ADD COLUMN portfolio VARCHAR(200)"),
+    ("pursuit", "estimated_value", "ALTER TABLE pursuit ADD COLUMN estimated_value BIGINT"),
+    ("pursuit", "expected_award_date", "ALTER TABLE pursuit ADD COLUMN expected_award_date DATE"),
 ]
 
 

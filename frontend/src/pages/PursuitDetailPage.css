@@ -95,6 +95,30 @@
   color: var(--color-text-secondary);
 }
 
+/* Est. value · Weighted · Est. award, same label-over-value style as the Pursuits cards. */
+.pursuit-detail__planning {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+  margin: 10px 0 0;
+}
+
+.pursuit-detail__planning dt {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.pursuit-detail__planning dd {
+  margin: 1px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
 .pursuit-detail__title-actions {
   display: flex;
   align-items: center;
@@ -199,6 +223,24 @@
 .pursuit-edit-form__optional {
   font-weight: 400;
   text-transform: none;
+}
+
+.pursuit-edit-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px 12px;
+}
+
+.pursuit-edit-form input[aria-invalid='true'] {
+  border-color: var(--color-critical);
+}
+
+.pursuit-edit-form__error {
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-critical);
 }
 
 .pursuit-edit-form__actions {

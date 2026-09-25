@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Blueprint, jsonify, request
 
 import journal
@@ -34,6 +36,34 @@ def list_projects():
     return jsonify(sorted({r[0] for r in rows if r[0]}))
 
 
+def _parse_planning(body: dict) -> tuple[dict, str | None]:
+    """The two planning fields, for whichever of them the body carries. Null or "" clears one.
+    Returns (values to set, error message)."""
+    out: dict = {}
+    if "estimated_value" in body:
+        v = body["estimated_value"]
+        if v is None or v == "":
+            out["estimated_value"] = None
+        else:
+            try:
+                n = round(float(v))
+            except (TypeError, ValueError):
+                return {}, "estimated_value must be a dollar amount"
+            if n < 0:
+                return {}, "estimated_value can't be negative"
+            out["estimated_value"] = n
+    if "expected_award_date" in body:
+        v = body["expected_award_date"]
+        if v is None or v == "":
+            out["expected_award_date"] = None
+        else:
+            try:
+                out["expected_award_date"] = date.fromisoformat(str(v))
+            except ValueError:
+                return {}, "expected_award_date must be a date (YYYY-MM-DD)"
+    return out, None
+
+
 def _validate_create(body: dict) -> tuple[dict, int] | None:
     if not (body.get("name") or "").strip():
         return {"error": "name is required"}, 400
@@ -50,8 +80,12 @@ def create_pursuit():
     err = _validate_create(body)
     if err:
         return jsonify(err[0]), err[1]
+    planning, planning_err = _parse_planning(body)
+    if planning_err:
+        return jsonify({"error": planning_err}), 400
 
     p = Pursuit(
+        **planning,
         name=body["name"].strip(),
         customer=(body.get("customer") or "").strip() or None,
         project=(body.get("project") or "").strip() or None,
@@ -72,17 +106,22 @@ def _journal_snapshot(p: Pursuit) -> dict:
 
 @bp.put("/pursuits/<pursuit_id>")
 def update_pursuit(pursuit_id):
-    """Static fields — name, customer, portfolio, gate, status. Every changed field is
-    auto-logged to the journal; an optional `journal_note` (plus `author`) rides along in the
-    same save."""
+    """Static fields — name, customer, portfolio, gate, status, estimated value, expected award
+    date. Every changed field is auto-logged to the journal; an optional `journal_note` (plus
+    `author`) rides along in the same save."""
     p = Pursuit.query.get_or_404(pursuit_id)
     body = request.get_json(force=True) or {}
     if body.get("current_gate") and body["current_gate"] not in GATES:
         return jsonify({"error": f"current_gate must be one of {GATES}"}), 400
     if body.get("status") and body["status"] not in PURSUIT_STATUSES:
         return jsonify({"error": f"status must be one of {PURSUIT_STATUSES}"}), 400
+    planning, planning_err = _parse_planning(body)
+    if planning_err:
+        return jsonify({"error": planning_err}), 400
 
     before = _journal_snapshot(p)
+    for field, value in planning.items():
+        setattr(p, field, value)
     if "name" in body:
         if not (body.get("name") or "").strip():
             return jsonify({"error": "name is required"}), 400
@@ -110,6 +149,9 @@ def update_pursuit(pursuit_id):
 @bp.delete("/pursuits/<pursuit_id>")
 def delete_pursuit(pursuit_id):
     p = Pursuit.query.get_or_404(pursuit_id)
+    # Journal events aren't on a cascading relationship (scores and bid calls are), and foreign
+    # keys are enforced, so an edited pursuit can't be deleted until its events are gone.
+    PursuitEvent.query.filter_by(pursuit_id=p.id).delete()
     db.session.delete(p)
     db.session.commit()
     return "", 204

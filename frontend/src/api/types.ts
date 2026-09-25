@@ -60,6 +60,12 @@ export interface Pursuit {
   description: string | null
   current_gate: Gate
   status: PursuitStatus
+  /** Total contract value in whole US dollars, options included (an IDIQ's ceiling). */
+  estimated_value: number | null
+  /** YYYY-MM-DD. */
+  expected_award_date: string | null
+  /** estimated_value x P(Win), from the server; null unless both exist. */
+  weighted_value: number | null
   created_by: string | null
   created_at: string
   p_win: ScoreEntry | null

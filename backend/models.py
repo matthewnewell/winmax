@@ -68,6 +68,12 @@ class Pursuit(db.Model):
     description = db.Column(db.Text, nullable=True)
     current_gate = db.Column(db.String(30), nullable=False, default="qualification")
     status = db.Column(db.String(20), nullable=False, default="active")
+    # The capture pipeline's two standard planning numbers. Estimated value is total contract
+    # value in whole US dollars, options included (for an IDIQ, the ceiling). The expected award
+    # date is when the contract is expected to be awarded; it's what shifts staffing demand.
+    # Weighted value (value x P(Win)) is derived in to_dict, never stored.
+    estimated_value = db.Column(db.BigInteger, nullable=True)
+    expected_award_date = db.Column(db.Date, nullable=True)
     created_by = db.Column(db.String(120), nullable=True)
     created_at = db.Column(db.DateTime, default=_now, nullable=False)
 
@@ -98,6 +104,12 @@ class Pursuit(db.Model):
             "description": self.description,
             "current_gate": self.current_gate,
             "status": self.status,
+            "estimated_value": self.estimated_value,
+            "expected_award_date": self.expected_award_date.isoformat() if self.expected_award_date else None,
+            "weighted_value": (
+                round(self.estimated_value * p_win.score / 100)
+                if self.estimated_value is not None and p_win else None
+            ),
             "created_by": self.created_by,
             "created_at": self.created_at.isoformat(),
             "p_win": p_win.to_dict() if p_win else None,

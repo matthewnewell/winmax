@@ -28,7 +28,7 @@ def test_seeded_pursuits(client):
     res = client.get("/api/pursuits")
     assert res.status_code == 200
     pursuits = res.get_json()
-    assert len(pursuits) == 3
+    assert len(pursuits) == 4
 
     avionics = next(p for p in pursuits if "Avionics" in p["name"])
     assert avionics["p_win"]["score"] == 68
@@ -136,3 +136,45 @@ def test_delete_pursuit(client):
     pid = created.get_json()["id"]
     assert client.delete(f"/api/pursuits/{pid}").status_code == 204
     assert client.get(f"/api/pursuits/{pid}").status_code == 404
+
+
+def test_delete_edited_pursuit(client):
+    # An edit writes journal events; the delete used to hit the foreign key and 500.
+    pid = client.post("/api/pursuits", json={"name": "Edited Pursuit"}).get_json()["id"]
+    client.put(f"/api/pursuits/{pid}", json={"customer": "NAVAIR", "journal_note": "why"})
+    assert client.delete(f"/api/pursuits/{pid}").status_code == 204
+    assert client.get(f"/api/pursuits/{pid}").status_code == 404
+
+
+def test_estimated_value_and_award_date(client):
+    pid = client.get("/api/pursuits").get_json()[0]["id"]
+
+    res = client.put(f"/api/pursuits/{pid}", json={"estimated_value": 12_500_000, "expected_award_date": "2027-03-15"})
+    assert res.status_code == 200
+    p = res.get_json()
+    assert p["estimated_value"] == 12_500_000
+    assert p["expected_award_date"] == "2027-03-15"
+    # Weighted (factored) value = estimated value x P(Win), derived, only when both exist.
+    if p["p_win"]:
+        assert p["weighted_value"] == round(12_500_000 * p["p_win"]["score"] / 100)
+
+    changes = {e["field"]: e for e in client.get(f"/api/pursuits/{pid}/events").get_json() if e["kind"] == "change"}
+    assert changes["estimated value"]["new_value"] == "$12,500,000"
+    assert changes["expected award date"]["new_value"] == "2027-03-15"
+
+    # Empty clears; bad input is rejected.
+    cleared = client.put(f"/api/pursuits/{pid}", json={"estimated_value": "", "expected_award_date": None}).get_json()
+    assert cleared["estimated_value"] is None and cleared["expected_award_date"] is None
+    assert cleared["weighted_value"] is None
+    assert client.put(f"/api/pursuits/{pid}", json={"estimated_value": "lots"}).status_code == 400
+    assert client.put(f"/api/pursuits/{pid}", json={"estimated_value": -5}).status_code == 400
+    assert client.put(f"/api/pursuits/{pid}", json={"expected_award_date": "next spring"}).status_code == 400
+
+
+def test_create_pursuit_with_planning_fields(client):
+    res = client.post("/api/pursuits", json={"name": "New IDIQ", "estimated_value": "48000000.4", "expected_award_date": "2027-06-30"})
+    assert res.status_code == 201
+    p = res.get_json()
+    assert p["estimated_value"] == 48_000_000
+    assert p["expected_award_date"] == "2027-06-30"
+    assert p["weighted_value"] is None  # no P(Win) scored yet

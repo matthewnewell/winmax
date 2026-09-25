@@ -27,13 +27,6 @@
   letter-spacing: -0.02em;
 }
 
-.pursuits-page__hint {
-  margin: 0;
-  max-width: 46ch;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--color-text-faint);
-}
 
 .new-pursuit-form {
   display: flex;
@@ -136,6 +129,31 @@
   font-size: 12px;
   color: var(--color-text-secondary);
   margin-top: -4px;
+}
+
+/* Est. value · Weighted · Est. award: the pipeline numbers, label over value. */
+.pursuit-card__planning {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  gap: 4px 22px;
+  margin: 4px 0 0;
+}
+
+.pursuit-card__planning dt {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.pursuit-card__planning dd {
+  margin: 1px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .pursuit-card__badges {

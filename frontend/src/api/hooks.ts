@@ -22,13 +22,6 @@ export function usePursuit(pursuitId: string | undefined) {
   })
 }
 
-export function useProjects() {
-  return useQuery({
-    queryKey: ['projects'],
-    queryFn: () => api.get<string[]>('/projects'),
-  })
-}
-
 export function useHealth() {
   return useQuery({
     queryKey: ['health'],
@@ -52,10 +45,7 @@ export function useCreatePursuit() {
   return useMutation({
     mutationFn: (data: { name: string; customer?: string; project?: string; portfolio?: string; description?: string; created_by?: string }) =>
       api.post<Pursuit>('/pursuits', data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['pursuits'] })
-      qc.invalidateQueries({ queryKey: ['projects'] })
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pursuits'] }),
   })
 }
 
@@ -63,7 +53,9 @@ export function useUpdatePursuit(pursuitId: string) {
   const invalidate = useInvalidatePursuit(pursuitId)
   return useMutation({
     mutationFn: (
-      data: Partial<Pick<Pursuit, 'name' | 'customer' | 'project' | 'portfolio' | 'description'>> & {
+      data: Partial<
+        Pick<Pursuit, 'name' | 'customer' | 'project' | 'portfolio' | 'description' | 'estimated_value' | 'expected_award_date'>
+      > & {
         current_gate?: Gate
         status?: PursuitStatus
         author?: string

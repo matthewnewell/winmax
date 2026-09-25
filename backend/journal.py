@@ -13,12 +13,16 @@ PURSUIT_FIELDS = {
     "portfolio": "portfolio",
     "current_gate": "gate",
     "status": "status",
+    "estimated_value": "estimated value",
+    "expected_award_date": "expected award date",
 }
 
 
 def _fmt(value) -> str:
     if value is None or value == "":
         return "—"
+    if isinstance(value, int) and not isinstance(value, bool):
+        return f"${value:,}"
     return str(value)
 
 

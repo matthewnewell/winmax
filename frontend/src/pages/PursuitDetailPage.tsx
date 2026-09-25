@@ -8,6 +8,7 @@ import Nav from '../components/Nav'
 import { BidBadge, ScoreBadge, ScoreBadgeEmpty } from '../components/ScoreBadge'
 import Journal from '../components/Journal'
 import { getAuthor, relativeTime } from '../lib/journal'
+import { formatAwardDate, formatMoney, parseMoney } from '../lib/planning'
 import './PursuitDetailPage.css'
 
 // This app's own id in Conway's Depot's registry. WinMax stays Depot-unaware (it never learns a
@@ -65,6 +66,20 @@ export default function PursuitDetailPage() {
                 <div className="pursuit-detail__title-block">
                   <h1 className="pursuit-detail__title">{p.name}</h1>
                   {p.customer && <div className="pursuit-detail__customer">{p.customer}</div>}
+                  <dl className="pursuit-detail__planning">
+                    <div>
+                      <dt>Est. value</dt>
+                      <dd>{p.estimated_value != null ? formatMoney(p.estimated_value) : '—'}</dd>
+                    </div>
+                    <div title="Estimated value × P(Win)">
+                      <dt>Weighted</dt>
+                      <dd>{p.weighted_value != null ? formatMoney(p.weighted_value) : '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>Est. award</dt>
+                      <dd>{p.expected_award_date ? formatAwardDate(p.expected_award_date) : '—'}</dd>
+                    </div>
+                  </dl>
                 </div>
                 <div className="pursuit-detail__title-actions">
                   <select
@@ -88,7 +103,11 @@ export default function PursuitDetailPage() {
                 </div>
               </div>
               {editing ? (
-                <PursuitEditForm pursuitId={p.id} name={p.name} customer={p.customer} description={p.description} onDone={() => setEditing(false)} />
+                <PursuitEditForm
+                  pursuitId={p.id} name={p.name} customer={p.customer} description={p.description}
+                  estimatedValue={p.estimated_value} expectedAwardDate={p.expected_award_date}
+                  onDone={() => setEditing(false)}
+                />
               ) : (
                 p.description && <p className="pursuit-detail__desc">{p.description}</p>
               )}
@@ -275,24 +294,37 @@ function BidColumn({
 }
 
 function PursuitEditForm({
-  pursuitId, name, customer, description, onDone,
+  pursuitId, name, customer, description, estimatedValue, expectedAwardDate, onDone,
 }: {
   pursuitId: string
   name: string
   customer: string | null
   description: string | null
+  estimatedValue: number | null
+  expectedAwardDate: string | null
   onDone: () => void
 }) {
   const updatePursuit = useUpdatePursuit(pursuitId)
-  const [form, setForm] = useState({ name, customer: customer ?? '', description: description ?? '', note: '' })
+  const [form, setForm] = useState({
+    name,
+    customer: customer ?? '',
+    description: description ?? '',
+    value: estimatedValue != null ? estimatedValue.toLocaleString('en-US') : '',
+    awardDate: expectedAwardDate ?? '',
+    note: '',
+  })
+  const value = parseMoney(form.value)
+  const valueInvalid = Number.isNaN(value)
 
   function submit() {
-    if (!form.name.trim()) return
+    if (!form.name.trim() || valueInvalid) return
     updatePursuit.mutate(
       {
         name: form.name.trim(),
         customer: form.customer.trim() || undefined,
         description: form.description.trim() || undefined,
+        estimated_value: value,
+        expected_award_date: form.awardDate || null,
         author: getAuthor(),
         journal_note: form.note.trim() || undefined,
       },
@@ -314,12 +346,29 @@ function PursuitEditForm({
         Description
         <textarea rows={2} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
       </label>
+      <div className="pursuit-edit-form__row">
+        <label>
+          Estimated value <span className="pursuit-edit-form__optional">(total, with options)</span>
+          <input
+            inputMode="decimal"
+            placeholder="e.g. 185M or 185,000,000"
+            value={form.value}
+            aria-invalid={valueInvalid}
+            onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
+          />
+          {valueInvalid && <span className="pursuit-edit-form__error">Enter a dollar amount, like 185M or 185,000,000</span>}
+        </label>
+        <label>
+          Expected award date
+          <input type="date" value={form.awardDate} onChange={(e) => setForm((f) => ({ ...f, awardDate: e.target.value }))} />
+        </label>
+      </div>
       <label>
         Journal note <span className="pursuit-edit-form__optional">(optional)</span>
         <input placeholder="Why this change?" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
       </label>
       <div className="pursuit-edit-form__actions">
-        <button className="wm-btn wm-btn--primary" onClick={submit} disabled={!form.name.trim() || updatePursuit.isPending}>
+        <button className="wm-btn wm-btn--primary" onClick={submit} disabled={!form.name.trim() || valueInvalid || updatePursuit.isPending}>
           {updatePursuit.isPending ? 'Saving…' : 'Save'}
         </button>
         <button className="wm-btn wm-btn--ghost" onClick={onDone}>Cancel</button>

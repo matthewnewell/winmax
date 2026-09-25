@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useCreatePursuit, usePursuits, useProjects } from '../api/hooks'
+import { useCreatePursuit, usePursuits } from '../api/hooks'
 import { GATE_LABEL, PURSUIT_STATUS_LABEL } from '../api/types'
 import type { PursuitStatus } from '../api/types'
 import { BidBadge, ScoreBadge, ScoreBadgeEmpty } from '../components/ScoreBadge'
+import { formatAwardDate, formatMoney } from '../lib/planning'
 import './PursuitsPage.css'
 
 export default function PursuitsPage() {
   const navigate = useNavigate()
-  const [project, setProject] = useState('')
   const [status, setStatus] = useState('')
-  const { data: projects } = useProjects()
-  const { data: pursuits, isLoading } = usePursuits({ project: project || undefined, status: status || undefined })
+  const { data: pursuits, isLoading } = usePursuits({ status: status || undefined })
   const createPursuit = useCreatePursuit()
   const [composing, setComposing] = useState(false)
   const [name, setName] = useState('')
@@ -47,10 +46,7 @@ export default function PursuitsPage() {
     <div className="pursuits-page">
       <div className="pursuits-page__inner">
         <header className="pursuits-page__header">
-          <div>
-            <h1 className="pursuits-page__title">Pursuits</h1>
-            <p className="pursuits-page__hint">P(Win), P(Go), and the bid/no-bid call — three separate judgment calls, tracked at every gate.</p>
-          </div>
+          <h1 className="pursuits-page__title">Pursuits</h1>
           {!composing ? (
             <button className="wm-btn wm-btn--primary" onClick={() => setComposing(true)}>+ New pursuit</button>
           ) : (
@@ -77,10 +73,6 @@ export default function PursuitsPage() {
               <option key={s} value={s}>{PURSUIT_STATUS_LABEL[s]}</option>
             ))}
           </select>
-          <select value={project} onChange={(e) => setProject(e.target.value)}>
-            <option value="">All projects</option>
-            {(projects ?? []).map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
         </div>
 
         {isLoading && <p className="pursuits-page__empty">Loading…</p>}
@@ -95,6 +87,20 @@ export default function PursuitsPage() {
               </div>
               <div className="pursuit-card__name">{p.name}</div>
               {p.customer && <div className="pursuit-card__customer">{p.customer}</div>}
+              <dl className="pursuit-card__planning">
+                <div>
+                  <dt>Est. value</dt>
+                  <dd>{p.estimated_value != null ? formatMoney(p.estimated_value) : '—'}</dd>
+                </div>
+                <div title="Estimated value × P(Win)">
+                  <dt>Weighted</dt>
+                  <dd>{p.weighted_value != null ? formatMoney(p.weighted_value) : '—'}</dd>
+                </div>
+                <div>
+                  <dt>Est. award</dt>
+                  <dd>{p.expected_award_date ? formatAwardDate(p.expected_award_date) : '—'}</dd>
+                </div>
+              </dl>
               <div className="pursuit-card__badges">
                 {p.p_win ? <ScoreBadge metric="p_win" score={p.p_win.score} band={p.p_win.band} /> : <ScoreBadgeEmpty metric="p_win" />}
                 {p.p_go ? <ScoreBadge metric="p_go" score={p.p_go.score} band={p.p_go.band} /> : <ScoreBadgeEmpty metric="p_go" />}

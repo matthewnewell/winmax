@@ -31,11 +31,24 @@ FRC_PURSUIT_ID = "058bf4bb-5a4b-44c9-9163-8e9935e883a3"
 COASTAL_PURSUIT_ID = "d4e7a1b9-5c28-4360-9f1a-e83b0c6d72f5"
 
 
+# Illustrative demo numbers: estimated value (total contract value with options, or the IDIQ
+# ceiling) and expected award date, as days from today so the demo never goes stale.
+PLANNING = {
+    DEMO_PURSUIT_ID: (185_000_000, 150),
+    RADAR_PURSUIT_ID: (32_000_000, 60),
+    FRC_PURSUIT_ID: (64_000_000, 300),
+    COASTAL_PURSUIT_ID: (27_000_000, 200),
+}
+
+
 def _pursuit(name, customer, gate, status, created_offset, id=None, portfolio=_PORTFOLIO):
+    value, award_in_days = PLANNING.get(id, (None, None))
     return Pursuit(
         id=id, name=name, customer=customer, portfolio=portfolio,
         current_gate=gate, status=status, created_by="Sam Ortiz (PM)",
         created_at=_now() + created_offset * DAY,
+        estimated_value=value,
+        expected_award_date=(_now() + award_in_days * DAY).date() if award_in_days else None,
     )
 
 
